@@ -25,23 +25,27 @@ const transporter = nodemailer.createTransporter({
 
 // Ruta principal
 app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'src/pages/index.html');
-  console.log('=== DEBUGGING VERCEL ===');
-  console.log('__dirname:', __dirname);
-  console.log('Buscando index.html en:', indexPath);
-  console.log('¿Existe el archivo?', fs.existsSync(indexPath));
+  // Intentar diferentes rutas
+  const paths = [
+    path.join(__dirname, 'src/pages/index.html'),
+    path.join(__dirname, 'src/index.html'),
+    path.join(__dirname, 'index.html')
+  ];
   
-  // Listar contenido de directorios
-  try {
-    console.log('Contenido de raíz:', fs.readdirSync(__dirname));
-    console.log('Contenido de src:', fs.readdirSync(path.join(__dirname, 'src')));
-    console.log('Contenido de src/pages:', fs.readdirSync(path.join(__dirname, 'src/pages')));
-  } catch (error) {
-    console.log('Error listando directorios:', error.message);
+  for (const testPath of paths) {
+    if (fs.existsSync(testPath)) {
+      console.log('Archivo encontrado en:', testPath);
+      return res.sendFile(testPath);
+    }
   }
-  console.log('=======================');
   
-  res.sendFile(indexPath);
+  // Si no encuentra nada, mostrar info de debug
+  res.send(`
+    <h1>Debug Info</h1>
+    <p>__dirname: ${__dirname}</p>
+    <p>Archivos en raíz: ${fs.readdirSync(__dirname).join(', ')}</p>
+    <p><a href="/api/products">Test API</a></p>
+  `);
 });
 
 //Test 
