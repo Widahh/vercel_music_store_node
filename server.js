@@ -203,62 +203,45 @@ app.listen(PORT, () => {
 // Guardado información de contacto
 
 app.post("/api/contact", (req, res) => {
-  const messagesPath = path.join(__dirname, "backend/data/messages.json");
   const { nombre, email, asunto, mensaje, telefono } = req.body;
 
-  // Validacion basica
+  // Validación básica
   if (!nombre || !email || !asunto || !mensaje)
     return res.status(400).json({ error: "Faltan campos por rellenar" });
 
-  fs.readFile(messagesPath, "utf-8", (err, data) => {
-    let messages = [];
-    if (!err && data) messages = JSON.parse(data);
+  // Configurar email
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: `Confirmación: Hemos recibido tu mensaje - ${asunto}`,
+    text: `Hola ${nombre},\n\nGracias por contactarnos. Hemos recibido tu mensaje:\n\n"${mensaje}"\n\nNos pondremos en contacto contigo pronto.\n\nSaludos,\nEquipo Rat Pack Instruments`,
+  };
 
-    messages.push({
-      nombre,
-      email,
-      asunto,
-      mensaje,
-      telefono,
-      fecha: new Date(),
+  /* // Email para ti (administrador)
+  const adminMailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER, // Tu email
+    subject: `Nuevo mensaje de contacto: ${asunto}`,
+    text: `Nombre: ${nombre}\nEmail: ${email}\nTeléfono: ${telefono || "No proporcionado"}\nMensaje: ${mensaje}\nFecha: ${new Date()}`,
+  }; */
+
+  // Enviar ambos emails
+  transporter.sendMail(mailOptions, (emailError, info) => {
+    if (emailError) {
+      console.log("Error al enviar email al cliente:", emailError);
+      return res.status(500).json({ error: "Error al enviar confirmación" });
+    }
+
+    // Enviar email al admin
+    transporter.sendMail(adminMailOptions, (adminError) => {
+      if (adminError) {
+        console.log("Error al enviar email al admin:", adminError);
+      }
     });
 
-    fs.writeFile(
-      messagesPath,
-      JSON.stringify(messages, null, 2),
-      "utf8",
-      (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Error al guardar mensaje" });
-        }
-
-        // Enviar mensaje si se guarda al cliente
-        const mailOptions = {
-          from: process.env.EMAIL_USER, // Desde variable de entorno
-          to: email, // Email del cliente (destinatario)
-          subject: `Confirmación: Hemos recibido tu mensaje - ${asunto}`,
-          text: `Hola ${nombre},\n\nGracias por contactarnos. Hemos recibido tu mensaje:\n\n"${mensaje}"\n\nNos pondremos en contacto contigo pronto.\n\nSaludos,\nEquipo Rat Pack Instruments`,
-        };
-
-        // Email para administracion o persona de soporte
-        /* const adminMailOptions = {
-          from: email,
-          to: "admin@ratpackinstruments.com",
-          subject: `Nuevo mensaje de contacto: ${asunto}`,
-          text: `Nombre: ${nombre}\nEmail: ${email}\nTeléfono: ${
-            telefono || "No proporcionado"
-          }\nMensaje: ${mensaje}`,
-        }; */
-
-        // Enviar email (no bloquea la respuesta si falla)
-        transporter.sendMail(mailOptions, (emailError, info) => {
-          if (emailError) {
-            console.log("Error al enviar email:", emailError);
-            // No fallar la petición, solo loguear el error
-          } else {
-            console.log("Email enviado:", info.response);
-          }
-        });
+    res.json({ mensaje: "Mensaje recibido correctamente" });
+  });
+});
 
         // Responder al cliente inmediatamente
         res.json({ mensaje: "Mensaje recibido correctamente" });
