@@ -243,12 +243,6 @@ app.post("/api/contact", (req, res) => {
   });
 });
 
-        // Responder al cliente inmediatamente
-        res.json({ mensaje: "Mensaje recibido correctamente" });
-      }
-    );
-  });
-});
 
 // Endpoint chatbot con productos reales
 app.post("/api/chatbot", async (req, res) => {
