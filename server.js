@@ -28,10 +28,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'src/pages/index.html'));
 });
 
-app.get("/index.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "src/pages/index.html"));
-});
-
 // Obtener productos
 app.get("/api/products", (req, res) => {
   const productsPath = path.join(__dirname, "src/assets/data/products.json");
