@@ -3,7 +3,6 @@ const path = require("path");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 
-// Cargar variables de entorno
 require("dotenv").config();
 
 const app = express();
@@ -12,12 +11,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuración para servir archivos estáticos en Vercel
+// Servir archivos estáticos (TU CONFIGURACIÓN ORIGINAL)
 app.use(express.static(path.join(__dirname, 'src')));
-app.use('/assets', express.static(path.join(__dirname, 'src/assets')));
-app.use('/css', express.static(path.join(__dirname, 'src/css')));
-app.use('/js', express.static(path.join(__dirname, 'src/js')));
-app.use('/pages', express.static(path.join(__dirname, 'src/pages')));
 
 // Configuración de nodemailer
 const transporter = nodemailer.createTransporter({
@@ -28,7 +23,7 @@ const transporter = nodemailer.createTransporter({
   },
 });
 
-// Ruta principal para servir index.html
+// Ruta principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'src/pages/index.html'));
 });
