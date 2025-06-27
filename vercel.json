@@ -28,8 +28,12 @@
       "dest": "/src/pages/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "/",
       "dest": "/src/pages/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
     }
   ]
 }
