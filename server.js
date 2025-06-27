@@ -232,12 +232,12 @@ app.post("/api/contact", (req, res) => {
       return res.status(500).json({ error: "Error al enviar confirmación" });
     }
 
-    // Enviar email al admin
+    /* // Enviar email al admin
     transporter.sendMail(adminMailOptions, (adminError) => {
       if (adminError) {
         console.log("Error al enviar email al admin:", adminError);
       }
-    });
+    }); */
 
     res.json({ mensaje: "Mensaje recibido correctamente" });
   });
