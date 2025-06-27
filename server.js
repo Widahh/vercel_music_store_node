@@ -25,7 +25,23 @@ const transporter = nodemailer.createTransporter({
 
 // Ruta principal
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'src/pages/index.html'));
+  const indexPath = path.join(__dirname, 'src/pages/index.html');
+  console.log('=== DEBUGGING VERCEL ===');
+  console.log('__dirname:', __dirname);
+  console.log('Buscando index.html en:', indexPath);
+  console.log('¿Existe el archivo?', fs.existsSync(indexPath));
+  
+  // Listar contenido de directorios
+  try {
+    console.log('Contenido de raíz:', fs.readdirSync(__dirname));
+    console.log('Contenido de src:', fs.readdirSync(path.join(__dirname, 'src')));
+    console.log('Contenido de src/pages:', fs.readdirSync(path.join(__dirname, 'src/pages')));
+  } catch (error) {
+    console.log('Error listando directorios:', error.message);
+  }
+  console.log('=======================');
+  
+  res.sendFile(indexPath);
 });
 
 // Obtener productos
