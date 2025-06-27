@@ -3,57 +3,46 @@ const path = require("path");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
 
+// Cargar variables de entorno
 require("dotenv").config();
 
 const app = express();
-
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Servir archivos estáticos (TU CONFIGURACIÓN ORIGINAL)
-app.use(express.static(path.join(__dirname, 'src')));
 
 // Configuración de nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // Desde variable de entorno
+    pass: process.env.EMAIL_PASS, // Desde variable de entorno
   },
 });
 
-// Ruta principal
-app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'src/pages/index.html');
-  console.log('=== DEBUGGING VERCEL ===');
-  console.log('__dirname:', __dirname);
-  console.log('Buscando index.html en:', indexPath);
-  console.log('¿Existe el archivo?', fs.existsSync(indexPath));
-  
-  // Listar contenido de directorios
-  try {
-    console.log('Contenido de raíz:', fs.readdirSync(__dirname));
-    console.log('Contenido de src:', fs.readdirSync(path.join(__dirname, 'src')));
-    console.log('Contenido de src/pages:', fs.readdirSync(path.join(__dirname, 'src/pages')));
-  } catch (error) {
-    console.log('Error listando directorios:', error.message);
-  }
-  console.log('=======================');
-  
-  res.sendFile(indexPath);
-});
+// Servir estáticos
+app.use(express.static(path.join(__dirname, "src")));
 
 // Obtener productos
 app.get("/api/products", (req, res) => {
   const productsPath = path.join(__dirname, "src/assets/data/products.json");
 
+  // Leer productos
   fs.readFile(productsPath, "utf-8", (err, data) =>
     err
       ? res.status(500).json({ error: "Error al obtener productos" })
       : res.json(JSON.parse(data))
   );
 });
+
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+
+// Middleware para leer datos de formularios
+app.use(express.urlencoded({ extended: true }));
+
+// Servir archivos estáticos desde src
+app.use(express.static(path.join(__dirname, "src")));
+app.use(express.json()); // leer JSON del body!
+app.use(express.static("src")); // archivos estáticos (HTML, CSS, JS, etc.)
 
 // RUTA POST /register
 app.post("/api/register", (req, res) => {
@@ -126,6 +115,10 @@ app.post("/api/register", (req, res) => {
   });
 });
 
+app.get("/index.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "src/pages/index.html"));
+});
+
 // RUTA POST /login
 app.post("/login", (req, res) => {
   const usersPath = path.join(__dirname, "backend/data/users.json");
@@ -144,19 +137,24 @@ app.post("/login", (req, res) => {
     res.json({ mensaje: "Bienvenido", nombre: usuario.nombre });
   });
 });
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
 
 // Obtener carrito
 app.get("/api/cart", (req, res) => {
   const cartsPath = path.join(__dirname, "backend/data/carts.json");
   const user = req.query.user || "guest";
 
+  // Leer carritos
   fs.readFile(cartsPath, "utf-8", (err, data) => {
     if (err)
       return res.status(500).json({ error: "Error al obtener carritos" });
 
+    // Buscar carrito
     let carts = JSON.parse(data);
     const cart = carts.find((c) => c.user === user);
 
+    // Devolver carrito
     res.json(cart || { user, items: [] });
   });
 });
@@ -166,19 +164,23 @@ app.post("/api/cart", (req, res) => {
   const cartsPath = path.join(__dirname, "backend/data/carts.json");
   const { user, items } = req.body;
 
+  // Validar campos
   if (!user || !items || !Array.isArray(items))
     return res
       .status(400)
       .json({ error: "Faltan campos requeridos: user, items" });
 
+  // Leer carritos
   fs.readFile(cartsPath, "utf-8", (err, data) => {
     if (err)
       return res.status(500).json({ error: "Error al obtener carritos" });
 
+    // Actualizar o añadir carrito
     let carts = JSON.parse(data);
     const idx = carts.findIndex((c) => c.user === user);
     idx !== -1 ? (carts[idx].items = items) : carts.push({ user, items });
 
+    // Guardar carrito
     fs.writeFile(cartsPath, JSON.stringify(carts, null, 2), "utf8", (err) =>
       err
         ? res.status(500).json({ error: "Error al guardar carrito" })
@@ -187,11 +189,24 @@ app.post("/api/cart", (req, res) => {
   });
 });
 
+// Redirigir raíz
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "src/pages/index.html"));
+});
+
+// Puerto
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
 // Guardado información de contacto
+
 app.post("/api/contact", (req, res) => {
   const messagesPath = path.join(__dirname, "backend/data/messages.json");
   const { nombre, email, asunto, mensaje, telefono } = req.body;
 
+  // Validacion basica
   if (!nombre || !email || !asunto || !mensaje)
     return res.status(400).json({ error: "Faltan campos por rellenar" });
 
@@ -217,21 +232,35 @@ app.post("/api/contact", (req, res) => {
           return res.status(500).json({ error: "Error al guardar mensaje" });
         }
 
+        // Enviar mensaje si se guarda al cliente
         const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: email,
+          from: process.env.EMAIL_USER, // Desde variable de entorno
+          to: email, // Email del cliente (destinatario)
           subject: `Confirmación: Hemos recibido tu mensaje - ${asunto}`,
           text: `Hola ${nombre},\n\nGracias por contactarnos. Hemos recibido tu mensaje:\n\n"${mensaje}"\n\nNos pondremos en contacto contigo pronto.\n\nSaludos,\nEquipo Rat Pack Instruments`,
         };
 
+        // Email para administracion o persona de soporte
+        /* const adminMailOptions = {
+          from: email,
+          to: "admin@ratpackinstruments.com",
+          subject: `Nuevo mensaje de contacto: ${asunto}`,
+          text: `Nombre: ${nombre}\nEmail: ${email}\nTeléfono: ${
+            telefono || "No proporcionado"
+          }\nMensaje: ${mensaje}`,
+        }; */
+
+        // Enviar email (no bloquea la respuesta si falla)
         transporter.sendMail(mailOptions, (emailError, info) => {
           if (emailError) {
             console.log("Error al enviar email:", emailError);
+            // No fallar la petición, solo loguear el error
           } else {
             console.log("Email enviado:", info.response);
           }
         });
 
+        // Responder al cliente inmediatamente
         res.json({ mensaje: "Mensaje recibido correctamente" });
       }
     );
@@ -246,6 +275,7 @@ app.post("/api/chatbot", async (req, res) => {
     return res.status(400).json({ error: "Mensaje requerido" });
   }
 
+  // Cargar productos reales de la tienda
   const productsPath = path.join(__dirname, "src/assets/data/products.json");
   let productsInfo = "";
 
@@ -253,8 +283,10 @@ app.post("/api/chatbot", async (req, res) => {
     const productsData = fs.readFileSync(productsPath, "utf-8");
     const products = JSON.parse(productsData);
 
+    // Crear resumen más inteligente con ofertas destacadas
     productsInfo = "\n=== PRODUCTOS DISPONIBLES EN TIENDA ===\n";
 
+    // Separar productos por categoría y destacar ofertas
     const categories = {};
     products.forEach((product) => {
       if (!categories[product.category]) {
@@ -283,6 +315,7 @@ app.post("/api/chatbot", async (req, res) => {
     console.log("Error cargando productos:", error);
   }
 
+  // Prompt engineering específico para Rat Pack Instruments
   const systemPrompt = `Eres Aria, el asistente virtual experto de "Rat Pack Instruments".
 
 REGLAS IMPORTANTES:
@@ -311,7 +344,13 @@ IMPORTANTE: Al recomendar productos, siempre menciona:
 3. Qué incluye o accesorios recomendados
 4. Pregunta de seguimiento relevante`;
 
+  console.log(
+    "Prompt completo (últimos 500 chars):",
+    systemPrompt.substring(systemPrompt.length - 500)
+  );
+
   try {
+    // Groq
     console.log("Enviando request a Groq...");
 
     const response = await fetch(
@@ -320,7 +359,7 @@ IMPORTANTE: Al recomendar productos, siempre menciona:
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`, // Desde variable de entorno
         },
         body: JSON.stringify({
           model: "llama-3.1-8b-instant",
@@ -351,6 +390,7 @@ IMPORTANTE: Al recomendar productos, siempre menciona:
   } catch (error) {
     console.error("Error del chatbot Groq:", error);
 
+    // Mensaje específico según el tipo de error
     let errorMessage =
       "Lo siento, no puedo responder ahora. Prueba nuestro formulario de contacto o llama al +34 900 123 456";
 
@@ -366,13 +406,4 @@ IMPORTANTE: Al recomendar productos, siempre menciona:
   }
 });
 
-// Para desarrollo local
-const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  });
-}
-
-// Para Vercel
 module.exports = app;
