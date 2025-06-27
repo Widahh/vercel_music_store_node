@@ -44,6 +44,8 @@ app.get('/', (req, res) => {
   res.sendFile(indexPath);
 });
 
+//Test 
+
 // Obtener productos
 app.get("/api/products", (req, res) => {
   const productsPath = path.join(__dirname, "src/assets/data/products.json");
